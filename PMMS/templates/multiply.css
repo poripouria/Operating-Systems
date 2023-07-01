@@ -1,0 +1,38 @@
+/* Style for the page */
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    border: 1px solid #ccc;
+    padding: 20px;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+table {
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+table td {
+    padding: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+input[type="number"] {
+    width: 40px;
+    text-align: center;
+}

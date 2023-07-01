@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Matrix Multiplication</title>
+        <link rel="stylesheet" href="multiply.css">
+    </head>
+    <body>
+        <h1>Matrix Multiplication</h1>
+
+        <h2>Upload your matrices .txt file:</h2>
+        <input type="file" id="fileInput" accept=".txt">
+        <button onclick="readMatrixFile()">Load Matrix File</button>
+    
+        <h2>Or enter the dimensions of the matrices:</h2>
+        <label for="rows1">Number of rows in Matrix 1:</label>
+        <input type="number" id="rows1" name="rows1">
+        <br>
+        <label for="cols1">Number of columns in Matrix 1:</label>
+        <input type="number" id="cols1" name="cols1" oninput="updateRows2()">
+        <br>
+        <label for="rows2">Number of rows in Matrix 2:</label>
+        <input type="number" id="rows2" name="rows2" oninput="updateCols1()">
+        <br>
+        <label for="cols2">Number of columns in Matrix 2:</label>
+        <input type="number" id="cols2" name="cols2">
+        <br>
+        <br>
+        <button onclick="createMatrixInputs()">Confirm Dimensions</button>
+    
+        <h2>Enter the elements of Matrix 1:</h2>
+        <table id="matrix1">
+            <!-- Matrix 1 elements will be inserted here -->
+        </table>
+    
+        <h2>Enter the elements of Matrix 2:</h2>
+        <table id="matrix2">
+            <!-- Matrix 2 elements will be inserted here -->
+        </table>
+
+        <br>
+        <h2>Result of multiply:</h2>
+        <table id="matrix_res">
+            <!-- Result Matrix elements will be inserted here -->
+        </table>
+        <br>
+    
+        <button onclick="multiplyMatrices()">Calculate Matrix Product</button>
+    
+        <script>    
+            function updateCols1() {
+                var rows2 = document.getElementById("rows2").value;
+                document.getElementById("cols1").value = rows2;
+            }
+            function updateRows2() {
+                var cols1 = document.getElementById("cols1").value;
+                document.getElementById("rows2").value = cols1;
+            }
+
+            function createMatrixInputsTable(rows, cols, matrixId) {
+                var table = document.getElementById(matrixId);
+                table.innerHTML = "";
+
+                for (var i = 0; i < rows; i++) {
+                    var row = document.createElement("tr");
+                    for (var j = 0; j < cols; j++) {
+                        var cell = document.createElement("td");
+                        var input = document.createElement("input");
+                        input.type = "number";
+                        input.style.width = "40px";
+                        cell.appendChild(input);
+                        row.appendChild(cell);
+                    }
+                    table.appendChild(row);
+                }
+            }
+
+            function createMatrixInputs() {
+                var rows1 = document.getElementById("rows1").value;
+                var cols1 = document.getElementById("cols1").value;
+                var rows2 = document.getElementById("rows2").value;
+                var cols2 = document.getElementById("cols2").value;
+                
+                if (validateInput(rows1, cols1, rows2, cols2)) {
+                    createMatrixInputsTable(rows1, cols1, "matrix1");
+                    createMatrixInputsTable(rows2, cols2, "matrix2");
+                }
+            }
+
+            function validateInput(rows1, cols1, rows2, cols2) {
+                if (rows1 <= 0 || cols1 <= 0 || rows2 <= 0 || cols2 <= 0) {
+                    alert("Number of rows and columns must be positive integers.");
+                    return false;
+                }
+                return true;
+            }
+
+            function readMatrixFile() {
+                var fileInput = document.getElementById('fileInput');
+                var file = fileInput.files[0];
+
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var contents = e.target.result;
+                    processMatrixFile(contents);
+                };
+
+                reader.readAsText(file);
+            }
+
+            function processMatrixFile(contents) {
+                var lines = contents.split('\n');
+                var matrix1Lines = [];
+                var matrix2Lines = [];
+                var separatorFound = false;
+
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (line === '') {
+                        separatorFound = true;
+                        continue;
+                    }
+
+                    if (separatorFound) {
+                        matrix2Lines.push(line);
+                    } else {
+                        matrix1Lines.push(line);
+                    }
+                }
+
+                if (matrix1Lines.length === 0 || matrix2Lines.length === 0) {
+                    alert('Invalid file format. Please provide two matrices separated by an empty line.');
+                    return;
+                }
+
+                var matrix1Rows = matrix1Lines.length;
+                var matrix1Cols = matrix1Lines[0].trim().split(' ').length;
+
+                var matrix2Rows = matrix2Lines.length;
+                var matrix2Cols = matrix2Lines[0].trim().split(' ').length;
+
+                document.getElementById('rows1').value = matrix1Rows;
+                document.getElementById('cols1').value = matrix1Cols;
+
+                document.getElementById('rows2').value = matrix2Rows;
+                document.getElementById('cols2').value = matrix2Cols;
+
+                createMatrixInputs(matrix1Rows, matrix1Cols, 'matrix1');
+                createMatrixInputs(matrix2Rows, matrix2Cols, 'matrix2');
+
+                fillMatrixValues(matrix1Lines, 'matrix1');
+                fillMatrixValues(matrix2Lines, 'matrix2');
+            }
+
+            function fillMatrixValues(lines, matrixId) {
+                var table = document.getElementById(matrixId);
+
+                for (var i = 0; i < lines.length; i++) {
+                    var values = lines[i].trim().split(' ');
+                    var row = table.rows[i];
+                    for (var j = 0; j < values.length; j++) {
+                        var cell = row.cells[j];
+                        var input = cell.getElementsByTagName('input')[0];
+                        input.value = values[j];
+                    }
+                }
+            }
+
+            function multiplyMatrices() {
+                // Send matrix values to server.cpp
+                var matrix1 = getMatrixValues('matrix1');
+                var matrix2 = getMatrixValues('matrix2');
+                sendMatricesToServer(matrix1, matrix2);
+
+                // Get result from server.cpp
+                var result = multiplyMatricesOnServer(matrix1, matrix2);
+                
+                // Display result
+                displayResult(result);
+            }
+
+            function getMatrixValues(matrixId) {
+                var table = document.getElementById(matrixId);
+                var rows = table.rows.length;
+                var cols = table.rows[0].cells.length;
+                var matrix = [];
+
+                for (var i = 0; i < rows; i++) {
+                    var row = [];
+                    for (var j = 0; j < cols; j++) {
+                        var cell = table.rows[i].cells[j];
+                        var input = cell.getElementsByTagName('input')[0];
+                        row.push(input.value);
+                    }
+                    matrix.push(row);
+                }
+
+                return matrix;
+            }
+
+            function sendMatricesToServer(matrix1, matrix2) {
+                var matrix1String = matrixToString(matrix1);
+                var matrix2String = matrixToString(matrix2);
+
+                var xhttp = new XMLHttpRequest();
+                xhttp.open("POST", "client.h", true);
+                xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhttp.send("matrix1=" + matrix1String + "&matrix2=" + matrix2String);
+            }
+
+            function matrixToString(matrix) {
+                var rows = matrix.length;
+                var cols = matrix[0].length;
+                var matrixString = "";
+
+                for (var i = 0; i < rows; i++) {
+                    for (var j = 0; j < cols; j++) {
+                        matrixString += matrix[i][j] + " ";
+                    }
+                    matrixString += "\n";
+                }
+
+                return matrixString;
+            }
+
+            function multiplyMatricesOnServer(matrix1, matrix2) {
+                var xhttp = new XMLHttpRequest();
+                xhttp.open("GET", "server.php", false);
+                xhttp.send();
+                var result = xhttp.responseText;
+                return result;
+            }
+
+            function displayResult(result) {
+                var resultMatrix = parseResult(result);
+                var rows = resultMatrix.length;
+                var cols = resultMatrix[0].length;
+
+                var table = document.getElementById('matrix_res');
+                table.innerHTML = "";
+
+                for (var i = 0; i < rows; i++) {
+                    var row = document.createElement("tr");
+                    for (var j = 0; j < cols; j++) {
+                        var cell = document.createElement("td");
+                        var input = document.createElement("input");
+                        input.type = "number";
+                        input.style.width = "40px";
+                        input.value = resultMatrix[i][j];
+                        input.disabled = true;
+                        cell.appendChild(input);
+                        row.appendChild(cell);
+                    }
+                    table.appendChild(row);
+                }
+            }
+        </script>
+    </body>
+</html>
+    
